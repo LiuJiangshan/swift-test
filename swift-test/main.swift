@@ -343,7 +343,7 @@ func test16() {
 }
 
 func test17() {
-    assert(false, "断言false")
+    assert(true, "断言false")
 }
 
 func test18() {
@@ -482,6 +482,275 @@ func test28() {
     }
 }
 
+struct MyArray {
+    var arry: [[Int]]
+
+    init(xSize: Int, ySize: Int) {
+        arry = Array(repeating: Array(repeating: 0, count: ySize), count: xSize)
+    }
+
+    subscript(x: Int, y: Int) -> Int {
+        get {
+            return arry[x][y]
+        }
+        set(newValue) {
+            arry[x][y] = newValue
+        }
+    }
+}
+
+func test29() {
+    let xSize = 10
+    let ySize = 20
+    var mArry = MyArray(xSize: xSize, ySize: ySize)
+    for x in 0..<xSize {
+        for y in 0..<ySize {
+            mArry[x, y] = Int.random(in: 0...9999)
+        }
+    }
+    for x in 0..<xSize {
+        for y in 0..<ySize {
+            print("[\(x),\(y)]:\(mArry[x, y])")
+        }
+    }
+}
+
+func throwMethod() throws {
+    let nameOk = true
+    let sexOk = true
+    let workOk = false
+    guard nameOk, sexOk, workOk else {
+        throw MyError.KnowError(msg: "something no ok")
+    }
+}
+
+func test30() {
+    do {
+        try throwMethod()
+    } catch MyError.KnowError(let msg) {
+        print(msg)
+    } catch {
+    }
+}
+
+struct Rect {
+    var w = 0;
+    var h = 0;
+}
+
+extension Rect {
+    init(width: Int, height: Int) {
+        self.init(w: width * 10, h: height * 10)
+    }
+
+    func isSquare() -> Bool {
+        return w == h
+    }
+}
+
+extension Rect {
+    init(w1: Int, h1: Int) {
+        self.init(width: w1 * 5, height: h1 * 5)
+    }
+}
+
+func test31() {
+    let rect = Rect(w1: 9, h1: 9)
+    print(rect.isSquare())
+    print(rect.w, rect.h)
+}
+
+func swapValue<T: Any>(v1: inout T, v2: inout T) {
+    let temp = v1
+    v1 = v2
+    v2 = temp
+}
+
+func test32() {
+    var str1 = "str1"
+    var str2 = "str2"
+    print(str1, str2)
+    swapValue(v1: &str1, v2: &str2)
+    print(str1, str2)
+}
+
+
+protocol SomeBuffer {
+    associatedtype Item: Equatable, Hashable
+    associatedtype Suffix: SomeBuffer where Suffix.Item == Item
+    func append(_ item: Item) -> Self
+    func remove(_ at: Int) -> Bool
+    func suffix(_ index: Int) -> Suffix
+    var count: Int { get }
+    subscript(_ index: Int) -> Item { get }
+}
+
+class MyStringBuffer: SomeBuffer {
+    var items = [String]()
+
+    typealias Item = String
+    typealias Suffix = MyStringBuffer
+
+    func append(_ item: String) -> Self {
+        items.append(item)
+        return self
+    }
+
+    func remove(_ at: Int) -> Bool {
+        return items.remove(at: at) != nil
+    }
+
+    func suffix(_ index: Int) -> MyStringBuffer {
+        var suffix = MyStringBuffer()
+        for i in index..<items.count {
+            suffix.append(items[i])
+        }
+        return suffix
+    }
+
+    var count: Int {
+        return items.count
+    }
+    subscript(_ index: Int) -> String {
+        return items[index]
+    }
+}
+
+func whereT<X: SomeBuffer, Y: SomeBuffer>(x: X, y: Y) where X.Item == Y.Item, X.Suffix == Y.Suffix {
+}
+
+func test33() {
+    var mStrBuffer = MyStringBuffer()
+    mStrBuffer.append("ljs").append("earth").append("23")
+    for index in 0..<mStrBuffer.count {
+        print(mStrBuffer[index])
+    }
+    print("count:\(mStrBuffer.count)")
+}
+
+func test34() {
+    var mStrBuf = MyStringBuffer()
+    mStrBuf.append("ljs").append("earth").append("24")
+    var suffix = mStrBuf.suffix(1)
+    for index in 0..<suffix.count {
+        print(suffix[index])
+    }
+}
+
+class Obj1 {
+    weak var obj2: Obj2?
+
+    init() {
+        print("init obj1")
+    }
+
+    deinit {
+        print("deinit obj1")
+    }
+}
+
+class Obj2 {
+    var obj1: Obj1?
+
+    init() {
+        print("init obj2")
+    }
+
+    deinit {
+        print("deinit obj2")
+    }
+}
+
+func test35() {
+    let obj1 = Obj1()
+    let obj2 = Obj2()
+
+    obj1.obj2 = obj2
+    obj2.obj1 = obj1
+
+//    obj1.obj2 = nil
+//    obj2.obj1 = nil
+    print("method end")
+}
+
+class Obj3 {
+    lazy var name: () -> String = {
+        [unowned self] in
+        return "\(self)"
+    }
+
+    init() {
+        print("init obj3")
+    }
+
+    deinit {
+        print("deinit obj3")
+    }
+}
+
+func test36() {
+    var obj3 = Obj3()
+    var name = obj3.name
+}
+
+func test37() throws {
+    let a: UInt8 = 0b00000001
+    let b: UInt8 = 0b11111110
+    print(a == ~b)
+    print(~a == b)
+    let c: UInt8 = 0b00000001
+    let d: UInt8 = 0b00000101
+    print((c & d) == 0b00000001)
+    print((c | d) == 0b00000101)
+    print((c ^ d) == 0b00000100)
+    for i in 0...100 {
+        if ((UInt8.random(in: UInt8.min...UInt8.max)) << 8) != 0 {
+            throw MyError.KnowError(msg: "error")
+        }
+    }
+    print(UInt8.max &+ 1)
+    print(UInt8.min &- 1)
+}
+
+extension People {
+    static prefix func +(people: People) -> Int {
+        return +1
+    }
+
+    static prefix func -(people: People) -> Int {
+        return -1
+    }
+
+    static func +=(left: inout People, right: People) {
+        left.age += 1
+    }
+
+    static func -=(left: inout People, right: People) {
+        left.age -= 1
+    }
+
+    static func ==(left: People, right: People) -> Bool {
+        return left === right
+    }
+}
+
+func test38() {
+    var people = People(sex: Sex.Male, name: "ljs", age: 23, likes: ["play"])
+    print(-people, +people)
+    people += people
+    print(people.age)
+    people -= people
+    print(people.age)
+    print(people == people)
+}
+
+extension Int {
+    static prefix func ++(int: inout Int) {
+        int += 1
+    }
+}
+
+
 //test1()
 //test2()
 //test3()
@@ -510,3 +779,13 @@ func test28() {
 //test26()
 //test27()
 //test28()
+//test29()
+//test30()
+//test31()
+//test32()
+//test33()
+//test34()
+//test35()
+//test36()
+//try test37()
+//test38()
